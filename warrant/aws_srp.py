@@ -94,6 +94,7 @@ class AWSSRP(object):
 
     NEW_PASSWORD_REQUIRED_CHALLENGE = 'NEW_PASSWORD_REQUIRED'
     PASSWORD_VERIFIER_CHALLENGE = 'PASSWORD_VERIFIER'
+    MFA_VERIFIER_CHALLENGE = 'SMS_MFA'
 
     def __init__(self, username, password, pool_id, client_id, pool_region=None,
                  client=None, client_secret=None):
@@ -214,6 +215,18 @@ class AWSSRP(object):
 
             if tokens.get('ChallengeName') == self.NEW_PASSWORD_REQUIRED_CHALLENGE:
                 raise ForceChangePasswordException('Change password before authenticating')
+
+            if tokens.get('ChallengeName') == self.MFA_VERIFIER_CHALLENGE:
+                sms = input('please provide the sms code')
+                sms_str = str(sms)
+                tokens = boto_client.respond_to_auth_challenge(
+                    ClientId=self.client_id,
+                    ChallengeName=self.MFA_VERIFIER_CHALLENGE,
+                    ChallengeResponses= {'SMS_MFA_CODE': sms_str,
+                                         'USERNAME': challenge_response.get('USERNAME')
+                                         },
+                    Session=tokens.get('Session')
+                )
 
             return tokens
         else:
